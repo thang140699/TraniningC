@@ -34,21 +34,25 @@ func RequestURL(url string) (*http.Response, error) {
 	}
 	return response, nil
 }
+
 func GetTime() (string, string, string) {
 	Year, Month, Day := Time.Date()
 	monthInt := int(Month)
 	stringMonth := strconv.Itoa(monthInt)
+
 	if monthInt < 10 {
 		stringMonth = "0" + stringMonth
 	}
+
 	return strconv.Itoa(Year), stringMonth, strconv.Itoa(Day - 1)
+
 }
 func HandleGetLinkTxT(htmlstring string) (result string) {
 	makeRegex := regexp.MustCompile(Regex)
 	tag := makeRegex.FindAllStringSubmatch(htmlstring, -1)
 	tagA := findTagB(tag, "all")
 	arrTagSplit := strings.Split(tagA, `"`)
-	result = arrTagSplit[len(arrTagSplit)-2]
+	result = arrTagSplit[len(arrTagSplit)-1]
 	return
 }
 func HashCode(stringHashCode string) (col1s, col2s, col3s, col4s []string) {
