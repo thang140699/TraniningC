@@ -2,9 +2,12 @@ package main
 
 import (
 	download "crawl/utilities"
+	"flag"
 	"fmt"
 	"io"
 	"log"
+	"net/http"
+	"runtime"
 	"strconv"
 	"time"
 )
@@ -14,7 +17,10 @@ var (
 	Regex        = `<a.+?\s*href\s*=\s*["\']?([^"\'\s>]+)["\']?`
 	NumberOfWork = 100
 	mode         string
+	container    *Container
+
 	configPrefix string
+	configSource string
 )
 
 func getString(URL string) (string, error) {
@@ -60,7 +66,7 @@ func main() {
 			return
 		}
 
-		col1s, col2s, col3s, col4s := download.HashCode(stringHashCode)
+		md5s, sha1s, sha256s, ds := download.HashCode(stringHashCode)
 
 		monthInt := int(i.Month())
 		stringMonth := strconv.Itoa(monthInt)
@@ -70,39 +76,47 @@ func main() {
 		}
 
 		year, month, day := strconv.Itoa(i.Year()), stringMonth, strconv.Itoa(i.Day()-1)
-		pathCol1, pathCol2, pathCol3, pathCol4 := download.HandleCreateFile(year, month, day)
+		pathMD5, pathSHA1, pathSHA256, pathD := download.HandleCreateFile(year, month, day)
 
-
-		err = download.HandleWriteFile(col1s, pathCol1)
+		err = download.HandleWriteFile(md5s, pathMD5)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		err = download.HandleWriteFile(col2s, pathCol2)
+		err = download.HandleWriteFile(sha1s, pathSHA1)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		err = download.HandleWriteFile(col3s, pathCol3)
+		err = download.HandleWriteFile(sha256s, pathSHA256)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		err = download.HandleWriteFile(col4s, pathCol4)
+		err = download.HandleWriteFile(ds, pathD)
 		if err != nil {
 			log.Fatal(err)
 		}
 		i = i.Add(time.Hour * 24)
 	}
-	// var config Config
-	// err := download.LoadEnvFromFile(&config, configPrefix, config)
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
+	var config Config
+	err := download.LoadEnvFromFile(&config, configPrefix, configSource)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	container, err = NewContainer(config)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Println("Server is running at : " + config.Binding)
+
+	http.ListenAndServe(config.Binding, NewAPIv1(container))
+
 }
 
-
-// func init() {
-// 	runtime.GOMAXPROCS(runtime.NumCPU())
-// 	flag.StringVar(&configPrefix, "config", "configPrefix ")
-// }
+func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	flag.StringVar(&configPrefix, "config", "configPrefix", "crawl")
+	flag.StringVar(&configSource, "configSource", ".env", "config source")
+}

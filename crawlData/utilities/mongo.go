@@ -2,6 +2,7 @@ package download
 
 import (
 	"log"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -11,11 +12,11 @@ import (
 )
 
 const (
-	DB_SERVER     = "DB_SERVER"
-	DB_TIMEOUT    = "DB_TIMEOUT"
-	DB_DATABASE   = "DB_DATABASE"
-	DB_COLLECTION = "DB_COLLECTION"
-
+	DB_SERVER          = "DB_SERVER"
+	DB_TIMEOUT         = "DB_TIMEOUT"
+	DB_DATABASE        = "DB_DATABASE"
+	DB_COLLECTION      = "DB_COLLECTION"
+	DB_SOURCE          = "DB_SOURCE"
 	DB_DEFAULT_TIMEOUT = 10000
 )
 
@@ -24,9 +25,9 @@ type MongoDB struct {
 	URI        string
 	database   string
 	collection string
-
-	session *mgo.Session
-	url     string
+	source     string
+	session    *mgo.Session
+	url        string
 }
 
 var isLocked = false
@@ -55,6 +56,7 @@ func NewMongoDB(config map[string]string) *MongoDB {
 	instance := MongoDB{
 		database:   config[DB_DATABASE],
 		collection: config[DB_COLLECTION],
+		source:     config[DB_SOURCE],
 		timeout:    timeout,
 	}
 	err = instance.Init()
@@ -71,6 +73,17 @@ func (db *MongoDB) Init() error {
 	db.session.SetSocketTimeout(1 * time.Hour)
 
 	return nil
+}
+func (db *MongoDB) Dial() (*mgo.Session, error) {
+	if db.url != "" {
+		return mgo.Dial(db.url)
+	}
+
+	return mgo.DialWithInfo(&mgo.DialInfo{
+
+		Source:  db.source,
+		Timeout: time.Duration(db.timeout) * time.Millisecond,
+	})
 }
 
 func (db *MongoDB) Database() string {
@@ -97,4 +110,10 @@ func LoadEnvFromFile(config interface{}, configPrefix, envPath string) (err erro
 	godotenv.Load(envPath)
 	err = envconfig.Process(configPrefix, config)
 	return
+}
+func GetQuery(req *http.Request, key string) (string, bool) {
+	if values := req.URL.Query().Get(key); len(values) > 0 {
+		return values, true
+	}
+	return "", false
 }

@@ -89,10 +89,10 @@ func HandleCreateFile(Year, Month, Day string) (string, string, string, string) 
 	if err != nil {
 		log.Fatalln(err)
 	}
-	pathCol1 := pathFolder + "/col1.txt"
-	pathCol2 := pathFolder + "/col2.txt"
-	pathCol3 := pathFolder + "/col3.txt"
-	pathCol4 := pathFolder + "/col4.txt"
+	pathCol1 := pathFolder + "/md5.txt"
+	pathCol2 := pathFolder + "/sha1.txt"
+	pathCol3 := pathFolder + "/sha256.txt"
+	pathCol4 := pathFolder + "/ds.txt"
 	return pathCol1, pathCol2, pathCol3, pathCol4
 }
 func HandleWriteFile(array []string, path string) error {
